@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tararin ERP ติดตามคะแนนเมนู</title>
+<style>
+:root{
+  --bg:#f5f6fa; --card:#fff; --text:#1f2937; --muted:#6b7280; --line:#e5e7eb;
+  --brand:#0ea5e9; --brand-soft:#e0f2fe; --ok:#16a34a; --ok-soft:#dcfce7; --warn:#f59e0b; --danger:#dc2626;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0f1117;--card:#181b24;--text:#e5e7eb;--muted:#9ca3af;--line:#2a2f3c;--brand:#38bdf8;--brand-soft:#0c2a3d;--ok:#4ade80;--ok-soft:#14301f}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 "Sarabun","Noto Sans Thai",system-ui,sans-serif}
+.wrap{width:100%;max-width:none;margin:0;padding:20px clamp(16px,3vw,48px)}
+h1{font-size:1.25rem;margin:0}
+.sub{color:var(--muted);font-size:.85rem}
+#meta{font-size:1.05rem;margin-top:10px}
+
+/* summary */
+.summary{padding:4px 0 8px}
+.sum-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px 28px;display:flex;gap:28px;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.ring{--p:0;width:150px;height:150px;border-radius:50%;flex:none;display:grid;place-items:center;
+  background:conic-gradient(var(--ok) calc(var(--p)*1%),var(--line) 0)}
+.ring span{width:118px;height:118px;border-radius:50%;background:var(--card);display:grid;place-items:center;font-weight:800;font-size:2.2rem}
+.sum-info{flex:1;min-width:0}
+.score{font-size:2.4rem;font-weight:800;line-height:1.2}
+.score small{font-size:1.1rem;color:var(--muted);font-weight:400}
+.bar{height:16px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--ok);border-radius:99px;transition:width .3s}
+
+/* toolbar */
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.tools input[type=search]{flex:1;min-width:160px}
+input,select,button{font:inherit;color:inherit}
+input[type=text],input[type=search],select{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+button{cursor:pointer;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+button:hover{border-color:var(--brand)}
+button.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+button.ghost{border:none;background:none;color:var(--muted);padding:4px 8px}
+button.ghost:hover{color:var(--danger)}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg button{border-radius:99px;padding:8px 18px}
+.seg button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+
+/* sections & groups */
+.sec-title{margin:22px 0 8px;font-size:.8rem;letter-spacing:.04em;color:var(--muted);text-transform:uppercase;display:flex;justify-content:space-between;gap:8px}
+.group{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.g-head{display:flex;align-items:center;gap:16px;padding:16px 20px;font-size:1.05rem;cursor:pointer;user-select:none}
+.g-head:hover{background:var(--brand-soft)}
+.chev{transition:transform .2s;color:var(--muted);flex:none}
+.group.open .chev{transform:rotate(90deg)}
+.g-name{flex:1;min-width:0;font-weight:600}
+.g-meter{width:clamp(90px,25vw,360px);flex:none}
+.g-meter .bar{height:6px;margin:0}
+.g-count{font-size:.85rem;color:var(--muted);min-width:110px;text-align:right;flex:none}
+.group.complete .g-count{color:var(--ok);font-weight:600}
+.g-body{display:none;border-top:1px solid var(--line);padding:8px 20px 14px}
+.group.open .g-body .item{padding:10px 4px}
+.group.open .g-body{display:block}
+.item{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 4px;border-bottom:1px dashed var(--line)}
+.item:last-of-type{border-bottom:none}
+.item .n{flex:1;min-width:180px}
+.item .nm{font-weight:500}
+.item .path{display:block;font-size:.75rem;color:var(--muted);font-family:ui-monospace,monospace;overflow-wrap:anywhere}
+.i-btns{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sbtn{border:none;border-radius:99px;padding:6px 14px;font-size:.85rem;font-weight:600;background:var(--line);color:var(--muted)}
+.sbtn:hover{filter:brightness(.95)}
+.sbtn.y.on{background:#f59e0b;color:#fff}
+.sbtn.g.on{background:#16a34a;color:#fff}
+.item.st-doing{background:rgba(245,158,11,.08);border-radius:10px}
+.item.st-done{background:rgba(22,163,74,.1);border-radius:10px}
+.item .note{flex-basis:100%;border-color:#f59e0b}
+.item .pt{font-size:.75rem;color:var(--muted);flex:none}
+.tag{font-size:.65rem;background:var(--brand-soft);color:var(--brand);padding:1px 6px;border-radius:99px;margin-left:6px}
+.dg{color:#d97706;font-weight:600}
+.add-sub{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.add-sub input{flex:1;min-width:140px}
+.g-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:12px}
+.g-actions button{border-radius:99px;padding:7px 18px;font-size:.9rem;font-weight:600;border:none;color:#fff}
+.g-actions .b-ok{background:#16a34a}
+.g-actions .b-warn{background:#d97706}
+.g-actions .b-del{background:#dc2626}
+.g-actions button:hover{filter:brightness(.95);transform:translateY(-1px)}
+.empty{text-align:center;color:var(--muted);padding:30px 0}
+
+/* add group panel */
+.panel{background:var(--card);border:1px dashed var(--brand);border-radius:14px;padding:14px;margin-top:14px}
+.panel h2{font-size:1rem;margin:0 0 10px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row>*{flex:1;min-width:140px}
+.row button{flex:none}
+footer{color:var(--muted);font-size:.8rem;text-align:center;margin:28px 0 10px}
+.tabs{display:flex;gap:8px;margin:0 0 8px;position:sticky;top:0;z-index:6;background:var(--bg);padding:12px 0 8px}
+.tabs button{flex:1;padding:12px;font-weight:600;border-radius:12px}
+.tabs button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+[hidden]{display:none!important}
+.units{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+.unit{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.u-head{display:flex;align-items:center;gap:16px}
+.u-head .ring{width:84px;height:84px}
+.u-head .ring span{width:64px;height:64px;font-size:1.15rem}
+.u-name{font-size:1.25rem;font-weight:800}
+.u-sub{color:var(--muted);font-size:.9rem}
+.u-feats{margin-top:14px;border-top:1px solid var(--line);padding-top:6px}
+.u-row{display:block;width:100%;text-align:left;border:none;background:none;border-radius:8px;padding:8px 6px}
+.u-row:hover{background:var(--brand-soft)}
+.u-row .t{display:flex;justify-content:space-between;gap:8px;font-size:.95rem}
+.u-row .t b{color:var(--brand)}
+.u-row.full .t b{color:var(--ok)}
+.u-row .bar{height:6px;margin-top:5px}
+.u-row small{color:var(--muted);font-size:.75rem}
+.unit-sel{border-radius:99px;padding:6px 12px;font-size:.9rem}
+.g-actions label{margin-right:auto;font-size:.9rem;color:var(--muted);display:flex;align-items:center;gap:8px}
+.overview{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin:6px 0 4px}
+.ov{font-size:1rem;padding:14px 16px!important;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;text-align:left}
+.ov:hover{border-color:var(--brand)}
+.ov .t{display:flex;justify-content:space-between;gap:8px;font-size:.9rem;font-weight:600}
+.ov .t b{color:var(--brand)}
+.ov.full .t b{color:var(--ok)}
+.ov .bar{height:7px;margin-top:6px}
+.ov small{color:var(--muted);font-size:.75rem}
+.g-count b{font-size:1.1rem;color:var(--text)}
+@media (max-width:520px){.sum-card{padding:16px;gap:14px}.score{font-size:1.7rem}.g-meter{display:none}.ring{width:96px;height:96px}.ring span{width:74px;height:74px;font-size:1.4rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header style="padding-top:8px">
+    <h1>Tararin ERP ติดตามคะแนนเมนู</h1>
+    <div class="sub">ติ๊กเมนูย่อยที่ทำเสร็จแล้ว = 1 คะแนน · <span id="sync">เก็บในเครื่องนี้</span></div>
+  </header>
+
+
+  <nav class="tabs" id="tabs">
+    <button data-v="ov" class="on">ภาพรวมเมนูหลัก</button>
+    <button data-v="unit">แยกตามหน่วยงาน</button>
+    <button data-v="list">รายการเมนูย่อย</button>
+  </nav>
+
+  <div class="summary">
+    <div class="sum-card">
+      <div class="ring" id="ring"><span id="pct">0%</span></div>
+      <div class="sum-info">
+        <div class="score"><span id="done">0</span> / <span id="total">0</span> <small>คะแนน</small></div>
+        <div class="bar"><i id="bar"></i></div>
+        <div class="sub" id="meta" style="margin-top:6px"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="view-ov">
+  <div class="sub" style="margin:8px 0 4px;font-weight:600">ความคืบหน้าแต่ละเมนูหลัก (กดการ์ดเพื่อไปที่รายการ)</div>
+  <div class="overview" id="overview"></div>
+
+  </div>
+
+  <div id="view-unit" hidden>
+    <div class="sub" style="margin:8px 0 10px;font-weight:600">ความคืบหน้าแต่ละหน่วยงาน และเมนูหลักข้างใน (กดแถวเพื่อไปที่รายการ)</div>
+    <div class="units" id="units"></div>
+  </div>
+
+  <div id="view-list" hidden>
+  <section class="panel">
+    <h2>เพิ่มเมนูหลัก (กลุ่ม)</h2>
+    <div class="row">
+      <input type="text" id="newSec" list="secList" placeholder="หมวด เช่น ปฏิบัติงาน">
+      <datalist id="secList"></datalist>
+      <input type="text" id="newGroup" placeholder="ชื่อเมนูหลัก">
+      <select id="newUnit"></select>
+      <button class="primary" id="addGroup">เพิ่ม</button>
+    </div>
+  </section>
+  <div class="tools">
+    <input type="search" id="q" placeholder="ค้นหาเมนู…">
+    <div class="seg" id="filter">
+      <button data-f="all" class="on">ทั้งหมด</button>
+      <button data-f="todo">ยังไม่เริ่ม</button>
+      <button data-f="doing">กำลังดำเนินการ</button>
+      <button data-f="done">เสร็จแล้ว</button>
+    </div>
+  </div>
+
+  <main id="list"></main>
+  </div>
+
+
+
+  <footer>29 กลุ่มเมนูหลัก · 123 คะแนนตั้งต้น · แดชบอร์ด/งานรออนุมัติ/ออกจากระบบ ไม่มีเมนูย่อย (0 คะแนน)</footer>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* ---------- ข้อมูลตั้งต้น: [หมวด, เมนูหลัก, [[เมนูย่อย, path], ...]] ---------- */
+const SEED = [
+["ปฏิบัติงาน","นัดหมาย",[["ตารางนัด","/appointments"],["ตารางแพทย์","/doctor-schedule"]]],
+["ปฏิบัติงาน","ลูกค้า",[["รายชื่อลูกค้า","/customers"],["วิเคราะห์ RFM","/rfm"],["ข้อมูลสมาชิก","/loyalty-tiers"]]],
+["ปฏิบัติงาน","การติดตาม",[["ติดตามอาการ","/care"],["ติดตามการใช้บริการคอร์ส","/care?tab=course"],["งานที่ได้รับมอบหมาย","/assignments"],["บันทึกติดตามงานมอบหมาย","/follow-ups"],["บันทึกติดตามอาการ","/care-follow-ups"]]],
+["ปฏิบัติงาน","การขาย",[["บิล / ใบเสร็จ","/invoices"],["รับเงิน / ฝากเงิน","/payments"],["สิทธิ์คอร์สลูกค้า","/course-entitlements"],["โปรโมชัน","/promotions"],["คูปอง","/coupons"],["ประวัติการใช้โปร","/promotion-usages"]]],
+
+["สินค้า & คลัง","สินค้า & บริการ",[["สินค้า & บริการ","/products"],["หมวดบริการหลัก","/superservices"],["หมวดย่อย","/sub-categories"]]],
+["สินค้า & คลัง","คลังสินค้า",[["สต็อกคงเหลือ","/stock-balances"],["หัวที่เปิดใช้","/opened-units"],["มูลค่าสต็อก","/stock-valuation"],["ใบตรวจนับ","/stock-counts"],["ใบปรับยอด","/stock-adjustments"],["ยอดยกมาสต็อก","/stock-openings"]]],
+["สินค้า & คลัง","จัดซื้อ & รับของ",[["ใบขอซื้อ","/purchase-requisitions"],["ใบขอราคา","/rfqs"],["ใบสั่งซื้อ","/purchase-orders"],["ใบรับของ","/goods-receipts"],["ใบคืนของผู้ขาย","/purchase-returns"],["ผู้ขาย","/suppliers"]]],
+["สินค้า & คลัง","เบิก & โอนย้าย",[["ใบเบิก","/stock-issues"],["ใบขอเบิกจากคลังกลาง","/stock-requests"],["ใบคืนเข้าคลัง","/stock-returns"],["ใบโอนย้าย","/stock-transfers"],["ใบตัดของเสีย","/stock-disposals"]]],
+["สินค้า & คลัง","รายงานคลัง",[["เคลื่อนไหวสต็อก","/stock-movement-report"],["บัตรสต็อก","/stock-card"],["ต้นทุนสต็อกใช้ไป","/stock-cost-used"],["ล็อตและวันหมดอายุ","/stock-expiry"]]],
+
+["บัญชี & ทรัพย์สิน","บัญชี",[["สมุดรายวัน","/journal"],["ใบสำคัญทั่วไป","/journal-vouchers"],["บัญชีแยกประเภท","/general-ledger"],["ปิดงวดบัญชี","/accounting-periods"],["เจ้าหนี้การค้า","/payables"],["รายงานเงินสามก้อน","/money-report"],["งบกำไรขาดทุน","/profit-loss"],["งบแสดงฐานะการเงิน","/balance-sheet"],["หนังสือรับรองหัก ณ ที่จ่าย","/wht-certificates"],["รายงานภาษี","/tax-reports"]]],
+["บัญชี & ทรัพย์สิน","การเงิน · จ่ายเงิน",[["ใบสำคัญจ่าย","/expense-vouchers"],["ใบขอเบิกค่าใช้จ่าย","/expense-requests"],["เงินสดย่อย","/petty-cash"],["เงินทดรอง","/advances"],["คืนเงินกรรมการ","/on-behalf"],["เงินเข้าจากบัตร","/card-settlements"],["ค่าธรรมเนียมบัตร","/card-fee-report"]]],
+["บัญชี & ทรัพย์สิน","ทรัพย์สิน",[["ทะเบียนทรัพย์สิน","/assets"],["หมวดทรัพย์สิน","/asset-categories"],["ค่าเสื่อมราคา","/depreciation"],["เครื่องมือแพทย์","/medical-equipments"],["ของสิ้นเปลืองรายเครื่อง","/machine-consumables"]]],
+
+["บุคคล & เวลาทำงาน","พนักงาน",[["พนักงาน / ผู้ใช้","/users"],["ตำแหน่ง","/positions"],["คอมมิชชั่น","/commissions"]]],
+["บุคคล & เวลาทำงาน","เวลาทำงาน",[["เวลาเข้างาน","/attendances"],["ตารางกะรายเดือน","/shift-schedule"],["การลางาน","/leave-requests"],["ค่าล่วงเวลา (OT)","/overtimes"],["สรุปเวลาทำงาน","/hr-reports"]]],
+["บุคคล & เวลาทำงาน","ระบบสแกนนิ้ว (ZK)",[["เครื่องสแกน ZK","/zk-devices"],["การลงเวลา ZK","/zk-punches"],["ทดสอบ Zlink (ADMS)","/zk-test"]]],
+
+["ตั้งค่า · บัญชี","ตั้งค่าบัญชี",[["ผูกบัญชีเริ่มต้น","/accounting-setup"],["ผังบัญชี","/chart-of-accounts"],["โครงบรรทัดงบ","/statement-lines"],["รหัสภาษี","/tax-codes"],["ภาษีหัก ณ ที่จ่าย","/withholding-tax-codes"],["ศูนย์ต้นทุน","/cost-centers"]]],
+["ตั้งค่า · บัญชี","ธนาคาร & การชำระ",[["ธนาคาร","/banks"],["บัญชีธนาคารกิจการ","/bank-accounts"],["เงื่อนไขการชำระ","/payment-terms"],["บัตรเครดิต","/card-settings"]]],
+
+["ตั้งค่า · สินค้า & คลัง","ตั้งค่าสินค้า",[["หน่วยนับ","/units"],["การแปลงหน่วย","/unit-conversions"],["ยี่ห้อ","/brands"],["สูตรผสมยา","/mixing-recipes"]]],
+["ตั้งค่า · สินค้า & คลัง","หมวดคลัง",[["หมวดคลัง","/stock-categories"],["กลุ่มคลัง","/stock-subcategories"],["พฤติกรรมสต็อก","/stock-classes"]]],
+["ตั้งค่า · สินค้า & คลัง","ตั้งค่าคลัง",[["โลเคชันสต็อก","/locations"],["จุดสั่งซื้อรายคลัง","/product-stock-rules"],["เหตุผลการปรับยอด","/stock-adjust-reasons"],["ซีเรียล / ล็อตรายชิ้น","/product-serials"]]],
+["ตั้งค่า · สินค้า & คลัง","ตั้งค่าการซื้อ",[["ผู้ขายรายสินค้า","/product-suppliers"],["กลุ่มผู้ขาย","/vendor-groups"]]],
+
+["ตั้งค่า · บุคคล","ตั้งค่าเวลางาน",[["กะเวลางาน","/work-shifts"],["ประเภทการลงเวลา","/attendance-types"]]],
+["ตั้งค่า · บุคคล","ตั้งค่าการลา",[["ประเภทการลา","/leave-types"],["สถานะการลา","/leave-statuses"],["กลุ่มสิทธิ์วันลา","/leave-groups"],["สายอนุมัติการลา","/leave-flows"]]],
+
+["ตั้งค่า · องค์กร & ลูกค้า","องค์กร",[["ข้อมูลกิจการ","/companies"],["สาขา","/branches"],["ห้องหัตถการ","/floors"]]],
+["ตั้งค่า · องค์กร & ลูกค้า","ข้อมูลลูกค้า & การติดตาม",[["ประเภทลูกค้า","/customer-types"],["อาชีพลูกค้า","/occupations"],["สถานะการติดตาม","/status-types"],["ขั้นตอนอนุมัติปิดเคส","/care-close-steps"],["ขั้นตอนอนุมัติปิดงานติดตาม","/assignment-close-steps"]]],
+["ตั้งค่า · องค์กร & ลูกค้า","ตั้งค่าสมาชิก",[["ระดับสมาชิก","/member-levels"],["เกณฑ์เลื่อนระดับ","/tier-criteria"],["สิทธิประโยชน์สมาชิก","/benefit-types"]]],
+
+["ระบบ","สิทธิ์การใช้งาน",[["บทบาท & สิทธิ์","/roles"],["สิทธิ์การเข้าถึงเมนู","/menu-permissions"],["เครื่องที่อนุญาต","/trusted-devices"],["สายอนุมัติเอกสาร","/approval-flows"]]],
+["ระบบ","ประวัติระบบ",[["ผู้ใช้ที่ล็อกอินอยู่","/online-users"],["บันทึกการใช้งาน","/audit-logs"],["ประวัติซิงค์ข้อมูล","/sync-log"]]],
+["ระบบ","ตั้งค่าระบบ",[["ตั้งค่าเว็บ","/web-settings"],["ตั้งค่าองค์กร / แบรนด์","/brand-settings"],["แพ็กเกจ / การขายเว็บ","/packets"]]],
+];
+
+const KEY = "tararin-score-v1";
+let uid = 0; const nid = () => "i" + Date.now().toString(36) + (uid++);
+
+const UNITS = ["HR","POS","Purchase","Accounting","Maintenance"];
+const UNIT_OF = {
+  "นัดหมาย":"POS","ลูกค้า":"POS","การติดตาม":"POS","การขาย":"POS","สินค้า & บริการ":"POS","ข้อมูลลูกค้า & การติดตาม":"POS","ตั้งค่าสมาชิก":"POS",
+  "คลังสินค้า":"Purchase","จัดซื้อ & รับของ":"Purchase","เบิก & โอนย้าย":"Purchase","รายงานคลัง":"Purchase","ตั้งค่าสินค้า":"Purchase","หมวดคลัง":"Purchase","ตั้งค่าคลัง":"Purchase","ตั้งค่าการซื้อ":"Purchase",
+  "บัญชี":"Accounting","การเงิน · จ่ายเงิน":"Accounting","ตั้งค่าบัญชี":"Accounting","ธนาคาร & การชำระ":"Accounting",
+  "พนักงาน":"HR","เวลาทำงาน":"HR","ระบบสแกนนิ้ว (ZK)":"HR","ตั้งค่าเวลางาน":"HR","ตั้งค่าการลา":"HR",
+  "ทรัพย์สิน":"Maintenance"
+};
+function seedState(){
+  return { groups: SEED.map(([sec,name,subs]) => ({
+    id:nid(), sec, name, unit:UNIT_OF[name]||"", custom:false, open:false,
+    subs: subs.map(([n,p]) => ({id:nid(), name:n, path:p, done:false, status:"todo", note:"", custom:false}))
+  }))};
+}
+function normalize(s){
+  s.groups.forEach(g=>{ if(g.unit===undefined) g.unit = UNIT_OF[g.name]||""; });
+  s.groups.forEach(g=>g.subs.forEach(x=>{ x.status = x.status || (x.done?"done":"todo"); x.note = x.note||""; }));
+  return s;
+}
+function load(){
+  try{ const s = JSON.parse(localStorage.getItem(KEY)); if(s && Array.isArray(s.groups)) return normalize(s); }catch(e){}
+  return seedState();
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} cloudSave(); }
+
+/* ---------- Firebase (Firestore) ซิงก์ข้อมูลร่วมกัน ----------
+   ใส่ค่า config จาก Firebase Console ตรงนี้ ถ้าเว้นว่างจะเก็บในเครื่องอย่างเดียว */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDPRJ5y_6UXi5IyfsNJycs8VSraGEPvXbM",
+  authDomain: "tararinscore.firebaseapp.com",
+  projectId: "tararinscore",
+  appId: "1:309593395830:web:a4653b1a29c11adb5b0557"
+};
+let docRef = null, cloudTimer = null, lastCloud = "";
+const cloudJson = () => JSON.stringify({groups: state.groups.map(g=>{ const {open, ...r} = g; return r; })});
+function setSync(t, ok){ const el=document.getElementById("sync"); if(el){ el.textContent=t; el.style.color = ok? "var(--ok)":"var(--muted)"; } }
+function cloudSave(){
+  if(!docRef) return;
+  clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(()=>{
+    const j = cloudJson(); lastCloud = j;
+    docRef.set({data:j, updated:Date.now()}).then(()=>setSync("ซิงก์กับ Firebase แล้ว",true)).catch(()=>setSync("ซิงก์ไม่สำเร็จ (เก็บในเครื่องไว้ก่อน)",false));
+  }, 400);
+}
+function cloudInit(){
+  if(!FIREBASE_CONFIG.apiKey || typeof firebase==="undefined") return;
+  try{
+    firebase.initializeApp(FIREBASE_CONFIG);
+    docRef = firebase.firestore().collection("tararin").doc("score");
+    setSync("กำลังเชื่อมต่อ Firebase…",false);
+    docRef.onSnapshot(snap=>{
+      if(snap.metadata.hasPendingWrites) return;
+      if(!snap.exists){ cloudSave(); return; }
+      const j = snap.data().data;
+      setSync("ซิงก์กับ Firebase แล้ว",true);
+      if(j === lastCloud || j === cloudJson()) return;
+      if(document.activeElement && document.activeElement.matches("input")) { pendingRemote = j; return; }
+      applyRemote(j);
+    }, ()=>setSync("เชื่อมต่อ Firebase ไม่ได้ (เก็บในเครื่องไว้ก่อน)",false));
+  }catch(e){ setSync("เชื่อมต่อ Firebase ไม่ได้",false); }
+}
+let pendingRemote = null;
+function applyRemote(j){
+  try{
+    const r = normalize(JSON.parse(j)), openMap = {};
+    state.groups.forEach(g=>openMap[g.id]=g.open);
+    r.groups.forEach(g=>g.open = !!openMap[g.id]);
+    state = r; lastCloud = j;
+    try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){}
+    render();
+  }catch(e){}
+}
+document.addEventListener("focusout", ()=>{ setTimeout(()=>{
+  if(pendingRemote && !(document.activeElement && document.activeElement.matches("input"))){ const j=pendingRemote; pendingRemote=null; if(j!==cloudJson()) applyRemote(j); }
+},0); });
+
+let state = load(), filter = "all", query = "";
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function totals(){
+  let t=0,d=0; state.groups.forEach(g=>g.subs.forEach(s=>{t++; if(s.done) d++;}));
+  return {t,d,p: t? Math.round(d/t*1000)/10 : 0};
+}
+const fmt = n => (Number.isInteger(n) ? n : n.toFixed(1));
+
+function showView(v){
+  $("view-ov").hidden = v!=="ov"; $("view-unit").hidden = v!=="unit"; $("view-list").hidden = v!=="list";
+  [...$("tabs").children].forEach(b=>b.classList.toggle("on", b.dataset.v===v));
+  try{ history.replaceState(null,"","#"+v); }catch(e){}
+  window.scrollTo(0,0);
+}
+$("tabs").onclick = e=>{ const b=e.target.closest("button"); if(b) showView(b.dataset.v); };
+function unitOptions(sel){
+  return [...UNITS,""].map(u=>`<option value="${u}" ${u===sel?"selected":""}>${u||"อื่น ๆ (ระบบ/องค์กร)"}</option>`).join("");
+}
+function updateUnits(){
+  const row = g=>{
+    const t=g.subs.length, d=g.subs.filter(s=>s.done).length, p=t? Math.round(d/t*100):0;
+    return `<button class="u-row ${t&&d===t?"full":""}" data-go="${g.id}"><div class="t"><span>${esc(g.name)}</span><b>${p}%</b></div><div class="bar"><i style="width:${p}%"></i></div><small>${d}/${t} คะแนน</small></button>`;
+  };
+  const names = {"":"อื่น ๆ (ระบบ/องค์กร)"};
+  const list = [...UNITS,""].filter(u=>u!==""||state.groups.some(g=>(g.unit||"")===""));
+  $("units").innerHTML = list.map(u=>{
+    const gs = state.groups.filter(g=>(g.unit||"")===u);
+    let t=0,d=0; gs.forEach(g=>g.subs.forEach(s=>{t++; if(s.done)d++;}));
+    const p = t? Math.round(d/t*1000)/10 : 0;
+    return `<div class="unit"><div class="u-head"><div class="ring" style="--p:${p}"><span>${fmt(p)}%</span></div>
+      <div><div class="u-name">${names[u]||u}</div><div class="u-sub">${d}/${t} คะแนน · ${gs.length} เมนูหลัก</div></div></div>
+      <div class="u-feats">${gs.map(row).join("") || '<div class="empty" style="padding:10px">ยังไม่มีเมนูหลัก</div>'}</div></div>`;
+  }).join("");
+  $("newUnit").innerHTML = unitOptions($("newUnit").value||"");
+}
+$("units").addEventListener("click", e=>{
+  const b = e.target.closest("[data-go]"); if(b) goGroup(b.dataset.go);
+});
+function goGroup(id){
+  const g = state.groups.find(x=>x.id===id); g.open = true;
+  query=""; $("q").value=""; filter="all"; [...$("filter").children].forEach(x=>x.classList.toggle("on", x.dataset.f==="all"));
+  save(); render(); showView("list"); document.querySelector(`[data-g="${g.id}"]`).scrollIntoView({block:"start"});
+}
+function updateOverview(){
+  $("overview").innerHTML = state.groups.map(g=>{
+    const t=g.subs.length, d=g.subs.filter(s=>s.done).length, p=t? Math.round(d/t*100):0;
+    return `<button class="ov ${t&&d===t?"full":""}" data-go="${g.id}"><div class="t"><span>${esc(g.name)}</span><b>${p}%</b></div><div class="bar"><i style="width:${p}%"></i></div><small>${d}/${t} คะแนน</small></button>`;
+  }).join("");
+}
+$("overview").addEventListener("click", e=>{ const b = e.target.closest("[data-go]"); if(b) goGroup(b.dataset.go); });
+function updateSummary(){
+  updateOverview(); updateUnits();
+  const {t,d,p} = totals();
+  $("done").textContent = d; $("total").textContent = t;
+  $("pct").textContent = fmt(p) + "%";
+  $("ring").style.setProperty("--p", p);
+  $("bar").style.width = p + "%";
+  const gd = state.groups.filter(g=>g.subs.length && g.subs.every(s=>s.done)).length;
+  const dg = state.groups.reduce((a,g)=>a+g.subs.filter(s=>s.status==="doing").length,0);
+  $("meta").textContent = `กลุ่มเสร็จครบ ${gd}/${state.groups.length} · กำลังดำเนินการ ${dg} · เหลืออีก ${t-d} คะแนน`;
+}
+
+function render(){
+  const q = query.trim().toLowerCase();
+  let html = "", lastSec = null, shown = 0;
+  state.groups.forEach(g=>{
+    const d = g.subs.filter(s=>s.done).length, t = g.subs.length, dg = g.subs.filter(s=>s.status==="doing").length;
+    const match = s => (!q || (s.name+" "+s.path+" "+g.name).toLowerCase().includes(q))
+      && (filter==="all" || s.status===filter);
+    const subs = g.subs.filter(match);
+    if((q || filter!=="all") && !subs.length) return;
+    if(!q && filter==="all" ? false : false){}
+    if(g.sec !== lastSec){
+      const sd = secStats(g.sec);
+      html += `<div class="sec-title"><span>${esc(g.sec)}</span><span>${sd.d}/${sd.t} · ${sd.t? fmt(Math.round(sd.d/sd.t*1000)/10):0}%</span></div>`;
+      lastSec = g.sec;
+    }
+    shown++;
+    const pct = t? d/t*100 : 0;
+    const open = g.open || q || filter!=="all";
+    html += `<div class="group ${open?"open":""} ${t&&d===t?"complete":""}" data-g="${g.id}">
+      <div class="g-head" data-act="toggle">
+        <span class="g-name">${esc(g.name)}${g.custom?'<span class="tag">เพิ่มเอง</span>':""}</span>
+        <span class="g-meter"><div class="bar"><i style="width:${pct}%"></i></div></span>
+        <span class="g-count"><b>${fmt(Math.round(pct))}%</b> · ${d}/${t}${dg?` <span class="dg">· กำลังทำ ${dg}</span>`:""}</span>
+      </div>
+      <div class="g-body">
+        ${subs.map(s=>`<div class="item st-${s.status}" data-s="${s.id}">
+          <span class="n"><span class="nm">${esc(s.name)}</span>${s.custom?'<span class="tag">เพิ่มเอง</span>':""}
+            ${s.path?`<span class="path">${esc(s.path)}</span>`:""}</span>
+          <div class="i-btns">
+            <button class="sbtn y ${s.status==="doing"?"on":""}" data-act="doing">กำลังดำเนินการ</button>
+            <button class="sbtn g ${s.status==="done"?"on":""}" data-act="finish">เสร็จสิ้น</button>
+            <span class="pt">+1</span>
+            <button class="ghost" title="ลบ" data-act="delSub">✕</button>
+          </div>
+          ${s.status==="doing"||s.note?`<input type="text" class="note" data-note placeholder="หมายเหตุ: ติดอะไรอยู่…" value="${esc(s.note||"")}">`:""}
+        </div>`).join("") || `<div class="empty" style="padding:10px">ยังไม่มีเมนูย่อย</div>`}
+        <div class="add-sub">
+          <input type="text" placeholder="เพิ่มเมนูย่อยใหม่…" data-new="name">
+          <input type="text" placeholder="path (ไม่บังคับ)" data-new="path" style="max-width:180px">
+          <button data-act="addSub">เพิ่ม</button>
+        </div>
+        <div class="g-actions">
+          <label>หน่วยงาน <select class="unit-sel" data-unit>${unitOptions(g.unit||"")}</select></label>
+          <button class="b-ok" data-act="tickAll">ติ๊กทั้งกลุ่ม</button>
+          <button class="b-warn" data-act="untickAll">ล้างติ๊ก</button>
+          <button class="b-del" data-act="delGroup">ลบกลุ่มนี้</button>
+        </div>
+      </div>
+    </div>`;
+  });
+  $("list").innerHTML = html || `<div class="empty">ไม่พบรายการ</div>`;
+  $("secList").innerHTML = [...new Set(state.groups.map(g=>g.sec))].map(s=>`<option value="${esc(s)}">`).join("");
+  updateSummary();
+}
+function secStats(sec){
+  let t=0,d=0; state.groups.filter(g=>g.sec===sec).forEach(g=>g.subs.forEach(s=>{t++; if(s.done)d++;}));
+  return {t,d};
+}
+
+/* ---------- events ---------- */
+$("list").addEventListener("click", e=>{
+  const el = e.target.closest("[data-act]"); if(!el) return;
+  const gEl = el.closest(".group"), g = state.groups.find(x=>x.id===gEl.dataset.g);
+  const act = el.dataset.act;
+  if(act==="doing"||act==="finish"){
+    const id = el.closest(".item").dataset.s, s = g.subs.find(x=>x.id===id);
+    const target = act==="doing"? "doing" : "done";
+    s.status = s.status===target? "todo" : target; s.done = s.status==="done";
+    save(); render();
+    if(s.status==="doing"){ const n = document.querySelector(`[data-s="${id}"] [data-note]`); if(n) n.focus(); }
+    return;
+  }
+  if(act==="toggle"){ g.open = !g.open; save(); render(); return; }
+  if(act==="delSub"){
+    const s = g.subs.find(x=>x.id===el.closest(".item").dataset.s);
+    if(confirm(`ลบเมนูย่อย “${s.name}” ?`)){ g.subs = g.subs.filter(x=>x!==s); save(); render(); }
+    return;
+  }
+  if(act==="delGroup"){
+    if(confirm(`ลบกลุ่ม “${g.name}” พร้อมเมนูย่อย ${g.subs.length} รายการ ?`)){ state.groups = state.groups.filter(x=>x!==g); save(); render(); }
+    return;
+  }
+  if(act==="tickAll"||act==="untickAll"){ g.subs.forEach(s=>{ s.done = act==="tickAll"; s.status = s.done? "done":"todo"; }); save(); render(); return; }
+  if(act==="addSub"){ addSub(g, gEl); }
+});
+$("list").addEventListener("change", e=>{
+  if(!e.target.matches("[data-unit]")) return;
+  const g = state.groups.find(x=>x.id===e.target.closest(".group").dataset.g);
+  g.unit = e.target.value; save(); render();
+});
+$("list").addEventListener("input", e=>{
+  if(!e.target.matches("[data-note]")) return;
+  const gEl = e.target.closest(".group"), g = state.groups.find(x=>x.id===gEl.dataset.g);
+  g.subs.find(x=>x.id===e.target.closest(".item").dataset.s).note = e.target.value; save();
+});
+$("list").addEventListener("keydown", e=>{
+  if(e.key==="Enter" && e.target.dataset.new){
+    const gEl = e.target.closest(".group"); addSub(state.groups.find(x=>x.id===gEl.dataset.g), gEl);
+  }
+});
+function addSub(g, gEl){
+  const name = gEl.querySelector('[data-new="name"]').value.trim();
+  const path = gEl.querySelector('[data-new="path"]').value.trim();
+  if(!name) return gEl.querySelector('[data-new="name"]').focus();
+  g.subs.push({id:nid(), name, path, done:false, status:"todo", note:"", custom:true}); g.open = true;
+  save(); render();
+  document.querySelector(`[data-g="${g.id}"] [data-new="name"]`).focus();
+}
+
+$("addGroup").onclick = ()=>{
+  const sec = $("newSec").value.trim() || "อื่น ๆ", name = $("newGroup").value.trim();
+  if(!name) return $("newGroup").focus();
+  const g = {id:nid(), sec, name, unit:$("newUnit").value, custom:true, open:true, subs:[]};
+  // วางต่อท้ายกลุ่มสุดท้ายของหมวดเดียวกัน (ถ้ามี) ไม่งั้นต่อท้ายสุด
+  let idx = -1; state.groups.forEach((x,i)=>{ if(x.sec===sec) idx=i; });
+  state.groups.splice(idx<0? state.groups.length : idx+1, 0, g);
+  $("newGroup").value=""; save(); render();
+  document.querySelector(`[data-g="${g.id}"]`).scrollIntoView({behavior:"smooth",block:"center"});
+};
+$("newGroup").addEventListener("keydown", e=>{ if(e.key==="Enter") $("addGroup").click(); });
+
+$("q").oninput = e=>{ query = e.target.value; render(); };
+$("filter").onclick = e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  filter = b.dataset.f; [...$("filter").children].forEach(x=>x.classList.toggle("on", x===b)); render();
+};
+
+render();
+cloudInit();
+showView(["#list","#unit"].includes(location.hash)? location.hash.slice(1) : "ov");
+</script>
+</body>
+</html>
